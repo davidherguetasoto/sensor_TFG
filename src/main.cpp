@@ -1,6 +1,5 @@
 #include<Arduino.h>
 #include <ArduinoBLE.h>
-//#include<NRF52_MBED_TimerInterrupt.h>
 
 //DEFINES
 #define ANALOG_IN A3  //Pin analogico donde se realiza la lectura
@@ -10,7 +9,9 @@
 #define N_MUESTRAS 100 //Numero de muestras que se toman para hacer la media
 #define T_MUESTREO 2 //Periodo de muestreo en ms
 #define T_SLEEP 2000 //Tiempo hasta hacer una nueva medida en ms
-#define T_SLEEP_NC 2000 //Tiempo en ms de espera cuando no hay ningun dispositivo conectado
+#define T_SLEEP_NC 1000 //Tiempo en ms de espera cuando no hay ningun dispositivo conectado
+#define T_POLLING 500 //Tiempo en ms del tiempo que se encuentra haciendo polling
+#define T_ADVERTISING 16000 //Tiempo en ms de intervalos entre advertising
 
 //void sendIndication();
 float medidaIrradiancia(void);
@@ -38,8 +39,8 @@ void setup() {
   
   pinMode(LED_PWR, OUTPUT);
   digitalWrite(LED_PWR, LOW);
-  digitalWrite(PIN_ENABLE_SENSORS_3V3, HIGH); //PIN_ENABLE_I2C_PULLUP - @pert contribution
-  digitalWrite(PIN_ENABLE_I2C_PULLUP, HIGH); //PIN_ENABLE_SENSORS_3V3 - @pert contribution
+  digitalWrite(PIN_ENABLE_SENSORS_3V3, LOW); //PIN_ENABLE_I2C_PULLUP - @pert contribution
+  digitalWrite(PIN_ENABLE_I2C_PULLUP, LOW); //PIN_ENABLE_SENSORS_3V3 - @pert contribution
 
   analogReadResolution(12); //Resolucion SAADC 12bits
   nrf_saadc_disable(); //Desactivar SAADC hasta que se necesite
@@ -53,7 +54,7 @@ void setup() {
   BLE.setLocalName("Nano33BLE_1");
 
   BLE.setAdvertisedService(sensorIrradiancia); 
-  BLE.setAdvertisingInterval(1600);
+  BLE.setAdvertisingInterval(T_ADVERTISING);
   
   sensorIrradiancia.addCharacteristic(irradiancia);
   BLE.addService(sensorIrradiancia);
@@ -65,22 +66,16 @@ void setup() {
 
   // Iniciar el anuncio no conectable
   BLE.advertise();
-
-  // Inicializar el temporizador para enviar indicaciones
-  //NRF52_MBED_Timer ITimer(NRF_TIMER_3);
-  //ITimer.attachInterruptInterval(5000000,sendIndication); // Enviar indicaciones cada 5 segundos
-  
 }
 
 void loop() {
-  BLE.poll(10000);
+  BLE.poll(T_POLLING);
   if(connected){
     while(connected){
-      //NRF_POWER->TASKS_LOWPWR=1;
       valor_irradiancia=medidaIrradiancia();
       sprintf(buffer,"%.1f",valor_irradiancia);
       irradiancia.writeValue(buffer);
-      BLE.poll(10000);
+      BLE.poll(T_POLLING);
       delay(T_SLEEP);
     }
   }
@@ -136,23 +131,3 @@ void blePeripheralDisconnectHandler(BLEDevice central)
 {
   connected=0;
 }
-
-/*void sendIndication() {
-  digitalWrite(LED_PWR,!digitalRead(LED_PWR));
-  // Obtener el valor actual de la característica
-  uint8_t value = customCharacteristic.value();
-
-  // Incrementar el valor en 1
-  value++;
-
-  // Establecer el nuevo valor de la característica
-  customCharacteristic.writeValue(value);
-
-  // Enviar la indicación a los dispositivos conectados
-  BLEDevice central = BLE.central();
-  if (central) {
-    customCharacteristic.broadcast();
-    Serial.print("Enviando indicación: ");
-    Serial.println(value);
-  }
-}*/
