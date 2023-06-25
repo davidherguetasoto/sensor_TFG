@@ -1,6 +1,6 @@
 #include<Arduino.h>
 #include <ArduinoBLE.h>
-#include<NRF52_MBED_TimerInterrupt.h>
+//#include<NRF52_MBED_TimerInterrupt.h>
 
 //DEFINES
 #define ANALOG_IN A3  //Pin analogico donde se realiza la lectura
