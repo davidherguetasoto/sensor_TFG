@@ -20,18 +20,18 @@ char buffer[16];
 BLEService sensorIrradiancia("181A");  // UUID del servicio personalizado
 BLEStringCharacteristic irradiancia("2A77", BLERead | BLENotify,16); // UUID de la característica personalizada
 
-/*
-//Disabling UART0 (saves around 300-500µA) - @Jul10199555 contribution
-NRF_UART0->TASKS_STOPTX = 1;
-NRF_UART0->TASKS_STOPRX = 1;
-NRF_UART0->ENABLE = 0;
 
-*(volatile uint32_t *)0x40002FFC = 0;
-*(volatile uint32_t *)0x40002FFC;
-*(volatile uint32_t *)0x40002FFC = 1; //Setting up UART registers again due to a library issue
-*/
 
 void setup() {
+  //Disabling UART0
+  NRF_UART0->TASKS_STOPTX = 1;
+  NRF_UART0->TASKS_STOPRX = 1;
+  NRF_UART0->ENABLE = 0;
+
+  *(volatile uint32_t *)0x40002FFC = 0;
+  *(volatile uint32_t *)0x40002FFC;
+  *(volatile uint32_t *)0x40002FFC = 1; //Setting up UART registers again due to a library issue
+  
   pinMode(LED_PWR, OUTPUT);
   digitalWrite(LED_PWR, LOW);
   digitalWrite(PIN_ENABLE_SENSORS_3V3, HIGH); //PIN_ENABLE_I2C_PULLUP - @pert contribution
