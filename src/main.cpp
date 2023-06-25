@@ -11,11 +11,15 @@
 #define T_MUESTREO 2 //Periodo de muestreo en ms
 #define T_SLEEP 2000 //Tiempo hasta hacer una nueva medida en ms
 #define T_SLEEP_NC 2000 //Tiempo en ms de espera cuando no hay ningun dispositivo conectado
+
 //void sendIndication();
 float medidaIrradiancia(void);
+void blePeripheralConnectHandler(BLEDevice central);
+void blePeripheralDisconnectHandler(BLEDevice central);
 
 float valor_irradiancia=0;
 char buffer[16];
+uint8_t connected=0;
 
 BLEService sensorIrradiancia("181A");  // UUID del servicio personalizado
 BLEStringCharacteristic irradiancia("2A77", BLERead | BLENotify,16); // UUID de la característica personalizada
@@ -47,10 +51,17 @@ void setup() {
 
   // Configurar el servicio y la característica personalizados
   BLE.setLocalName("Nano33BLE_1");
+
   BLE.setAdvertisedService(sensorIrradiancia); 
+  BLE.setAdvertisingInterval(1600);
+  
   sensorIrradiancia.addCharacteristic(irradiancia);
   BLE.addService(sensorIrradiancia);
   irradiancia.setValue("0"); // Establecer el valor inicial de la característica
+
+  //Event handlers for connected and disconnected
+  BLE.setEventHandler(BLEConnected, blePeripheralConnectHandler);
+  BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
 
   // Iniciar el anuncio no conectable
   BLE.advertise();
@@ -62,13 +73,14 @@ void setup() {
 }
 
 void loop() {
-  BLEDevice central = BLE.central();
-  if(central){
-    while(central.connected()){
+  BLE.poll(10000);
+  if(connected){
+    while(connected){
       //NRF_POWER->TASKS_LOWPWR=1;
       valor_irradiancia=medidaIrradiancia();
       sprintf(buffer,"%.1f",valor_irradiancia);
       irradiancia.writeValue(buffer);
+      BLE.poll(10000);
       delay(T_SLEEP);
     }
   }
@@ -115,6 +127,14 @@ float medidaIrradiancia(void)
   lectura_aux=lectura_aux/N_MUESTRAS;
   irrad_aux=lectura_aux*(VREF/4095);
   return irrad_aux/10.1*1000;
+}
+void blePeripheralConnectHandler(BLEDevice central)
+{
+  connected=1;
+}
+void blePeripheralDisconnectHandler(BLEDevice central)
+{
+  connected=0;
 }
 
 /*void sendIndication() {
