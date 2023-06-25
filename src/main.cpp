@@ -72,7 +72,7 @@ void loop() {
       delay(T_SLEEP);
     }
   }
-  delay(T_SLEEP_NC)
+  delay(T_SLEEP_NC);
 }
 
 float medidaIrradiancia(void)
