@@ -8,9 +8,9 @@
 #define SW_MEDIDA D5 //Pin control SW MEDIDA
 #define VREF 3.3  //Tensión de referencia del SAADC
 #define N_MUESTRAS 100 //Numero de muestras que se toman para hacer la media
-#define T_MUESTREO 10 //Periodo de muestreo en ms
-#define T_SLEEP 1000 //Tiempo hasta hacer una nueva medida en ms
-
+#define T_MUESTREO 2 //Periodo de muestreo en ms
+#define T_SLEEP 2000 //Tiempo hasta hacer una nueva medida en ms
+#define T_SLEEP_NC 2000 //Tiempo en ms de espera cuando no hay ningun dispositivo conectado
 //void sendIndication();
 float medidaIrradiancia(void);
 
@@ -72,6 +72,7 @@ void loop() {
       delay(T_SLEEP);
     }
   }
+  delay(T_SLEEP_NC)
 }
 
 float medidaIrradiancia(void)
