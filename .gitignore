@@ -1,6 +1,6 @@
 .pio
 .vscode/
-
+*.ini
 # https://github.com/github/gitignore/blob/master/C.gitignore
 
 # Prerequisites
