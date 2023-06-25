@@ -43,6 +43,9 @@ void setup() {
   digitalWrite(PIN_ENABLE_I2C_PULLUP, LOW); //PIN_ENABLE_SENSORS_3V3 - @pert contribution
 
   analogReadResolution(12); //Resolucion SAADC 12bits
+
+  digitalWrite(PWR_AMP,HIGH); //Desactivar MCP6023
+  digitalWrite(SW_MEDIDA,LOW); //Poner MOSFET en corte
   nrf_saadc_disable(); //Desactivar SAADC hasta que se necesite
 
   // Inicializar el entorno BLE
