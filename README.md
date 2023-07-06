@@ -4,4 +4,5 @@ Para ejecutarlo puedes copiar el codigo de main.cpp en un proyecto de ArduinoIDE
 
 El código se ha diseñado para funcionar en una placa de desarrollo Arduino nano 33 BLE.
 El código fuente se encuentra en la carpeta src.
-Requiere las librerías Arduino.h, ArduinoBLE.h y NRF52_MBED_TimerInterrupt para funcionar correctamente.
+Requiere las librerías Arduino.h y ArduinoBLE.h para funcionar.
+En la carpeta include se encuentra la librería fsm.h
