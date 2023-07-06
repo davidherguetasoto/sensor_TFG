@@ -21,10 +21,10 @@
 #define SW_MEDIDA D5 //Pin control SW MEDIDA
 #define VREF 3.3  //Tensión de referencia del SAADC
 #define N_MUESTRAS 100 //Numero de muestras que se toman para hacer la media
-#define T_MUESTREO 2 //Periodo de muestreo en ms
+#define T_MUESTREO 5 //Periodo de muestreo en ms
 #define T_SLEEP 2000 //Tiempo hasta hacer una nueva medida en ms
 #define T_SLEEP_NC 1000 //Tiempo en ms de espera cuando no hay ningun dispositivo conectado
-#define T_POLLING 500 //Tiempo en ms del tiempo que se encuentra haciendo polling
+#define T_POLLING 1000 //Tiempo en ms del tiempo que se encuentra haciendo polling
 #define T_ADVERTISING 16000 //Tiempo en ms de intervalos entre advertising
 
 //MANEJADORES INTERRUPCIÓN
@@ -39,7 +39,8 @@ enum states{
 };
 
 //VARIABLES GLOBALES
-float lectura = 0;
+uint32_t lectura = 0;
+float tension = 0;
 volatile uint8_t connected=0;
 uint32_t next=0;
 uint8_t N=0;
@@ -113,16 +114,17 @@ static void pollConnection(fsm_t* f)
 static void terminarMuestreo(fsm_t* f)
 {
   stopMedida();
-  lectura=lectura*(VREF/4095);
-  publicarMedida(lectura, &irradiancia);
+  tension=lectura/N_MUESTRAS*(VREF/4095);
+
+  publicarMedida(tension, &irradiancia);
   BLE.poll(T_POLLING);
   delayUntil(&next,T_SLEEP);
 }
 
 static void muestrear(fsm_t* f)
 {
-  lectura+=analogRead(ANALOG_IN)/N_MUESTRAS;
-  N++;
+  lectura+=analogRead(ANALOG_IN);
+  N++;;
   delayUntil(&next,T_MUESTREO);
 }
 
@@ -135,7 +137,6 @@ void blePeripheralDisconnectHandler(BLEDevice central)
 {
   connected=0;
 }
-
 /**
  * @brief Inicializa todos los perfiféricos necesarios
  * y realiza la configuración de la conexión BLE
@@ -202,7 +203,7 @@ void startMedida(void)
   digitalWrite(PWR_AMP,LOW); //Activar MCP6023
   digitalWrite(SW_MEDIDA,HIGH); //MOSFET en saturación
   nrf_saadc_enable(); //Activar SAADC
-  delay(1);
+  delayMicroseconds(200);
 }
 
 /**
@@ -232,7 +233,7 @@ void publicarMedida(float medida, BLEStringCharacteristic* caracteristica)
 {
   char buffer[16];
 
-  sprintf(buffer,"%.1f",medida);
+  sprintf(buffer,"%.3f",medida);
   caracteristica->writeValue(buffer);
 }
 

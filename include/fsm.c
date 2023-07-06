@@ -12,6 +12,7 @@ fsm_new (fsm_trans_t* tt)
 void fsm_init (fsm_t* this_, fsm_trans_t* tt)
 {
   this_->tt = tt;
+  this_->current_state=0;
 }
 
 void
