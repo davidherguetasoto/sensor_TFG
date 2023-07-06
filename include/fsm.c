@@ -9,8 +9,7 @@ fsm_new (fsm_trans_t* tt)
   return this_;
 }
 
-void
-fsm_init (fsm_t* this_, fsm_trans_t* tt)
+void fsm_init (fsm_t* this_, fsm_trans_t* tt)
 {
   this_->tt = tt;
 }
