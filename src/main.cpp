@@ -21,11 +21,10 @@
 #define SW_MEDIDA D5 //Pin control SW MEDIDA
 #define VREF 3.3  //Tensión de referencia del SAADC
 #define N_MUESTRAS 100 //Numero de muestras que se toman para hacer la media
-#define T_MUESTREO 5 //Periodo de muestreo en ms
-#define T_SLEEP 2000 //Tiempo hasta hacer una nueva medida en ms
-#define T_SLEEP_NC 1000 //Tiempo en ms de espera cuando no hay ningun dispositivo conectado
+#define T_MUESTREO 3 //Periodo de muestreo en ms
+#define T_SLEEP 3000 //Tiempo hasta hacer una nueva medida en ms
 #define T_POLLING 1000 //Tiempo en ms del tiempo que se encuentra haciendo polling
-#define T_ADVERTISING 16000 //Tiempo en ms de intervalos entre advertising
+#define T_ADVERTISING 1600 //Tiempo en ms de intervalos entre advertising
 
 //MANEJADORES INTERRUPCIÓN
 void blePeripheralConnectHandler(BLEDevice central);
@@ -33,49 +32,34 @@ void blePeripheralDisconnectHandler(BLEDevice central);
 
 //ESTADOS FSM
 enum states{
-  ESPERAR_CONEXION,
-  MUESTREO,
-  FIN_MEDIDA
+  IDLE
 };
 
 //VARIABLES GLOBALES
-uint32_t lectura = 0;
-float tension = 0;
 volatile uint8_t connected=0;
 uint32_t next=0;
-uint8_t N=0;
 fsm_t* fsm_sensor = NULL;
 
 //OTRAS FUNCIONES PARA LA FSM
 void begin(BLEService* servicio, BLECharacteristic* caracteristica, BLEDeviceEventHandler handler_connection,
  BLEDeviceEventHandler handler_disconnection);
-void stopMedida(void);
-void startMedida(void);
 void delayUntil(uint32_t* ultima_activacion, uint32_t tiempo_delay);
-void publicarMedida(float medida, BLEStringCharacteristic* caracteristica);
-uint32_t now(void);
+void hacerMedida(BLEStringCharacteristic* caracteristica);
 
 //FUNCIONES DE GUARDA. SE EJECUTAN CUANDO SE HACE EFECTIVA UNA TRANSICIÓN
-static void prepararMuestreo(fsm_t* f);
+static void medir(fsm_t* f);
 static void pollConnection(fsm_t* f);
-static void terminarMuestreo(fsm_t* f);
-static void muestrear(fsm_t* f);
 
 //FUNCIONES DE TRANSICIÓN. CONTROLAN LA REALIZACIÓN DE TRANSICIONES EN LA FSM
-static int conectado(fsm_t* f){if(connected&&(now()>=next))return 1; else return 0;}
-static int desconectado(fsm_t* f){if((!connected)&&(now()>=next))return 1; else return 0;}
-static int muestreoFinalizado(fsm_t* f){if(N>=N_MUESTRAS)return 1; else return 0;}
-static int muestreoNoFinalizado(fsm_t* f){if(N<N_MUESTRAS&&(now()>=next))return 1; else return 0;}
+static int conectado(fsm_t* f){if(connected)return 1; else return 0;}
+static int desconectado(fsm_t* f){if(!connected)return 1; else return 0;}
+
 
 
 //TABLA DE TRANSICIONES
 static fsm_trans_t sensor_tt[]={
-  {ESPERAR_CONEXION, conectado, MUESTREO, prepararMuestreo},
-  {ESPERAR_CONEXION, desconectado, ESPERAR_CONEXION, pollConnection},
-  {MUESTREO,muestreoFinalizado,FIN_MEDIDA,terminarMuestreo},
-  {MUESTREO,muestreoNoFinalizado,MUESTREO,muestrear},
-  {FIN_MEDIDA,desconectado,ESPERAR_CONEXION,pollConnection},
-  {FIN_MEDIDA, conectado, MUESTREO, prepararMuestreo},
+  {IDLE,conectado,IDLE,medir},
+  {IDLE,desconectado,IDLE,pollConnection},
   {-1, NULL, -1, NULL},
 };
 
@@ -87,45 +71,25 @@ BLEStringCharacteristic irradiancia("2A77", BLERead | BLENotify,16); // UUID de 
 
 void setup() {
   begin(&sensorIrradiancia, &irradiancia,blePeripheralConnectHandler,blePeripheralDisconnectHandler);
-  stopMedida();
   fsm_sensor = fsm_new(sensor_tt);
   next=millis();
 }
 
 void loop() {
   fsm_fire(fsm_sensor);
+  delayUntil(&next,T_SLEEP);
 }
 
 //DEFINICION FUNCIONES DE GUARDA
-static void prepararMuestreo(fsm_t* f)
+static void medir(fsm_t* f)
 {
-  N=0;
-  lectura=0;
-  startMedida();
-  next=now();
+  hacerMedida(&irradiancia);
+  BLE.poll(T_POLLING);
 }
 
 static void pollConnection(fsm_t* f)
 {
   BLE.poll(T_POLLING);
-  delayUntil(&next,T_SLEEP_NC);
-}
-
-static void terminarMuestreo(fsm_t* f)
-{
-  stopMedida();
-  tension=lectura/N_MUESTRAS*(VREF/4095);
-
-  publicarMedida(tension, &irradiancia);
-  BLE.poll(T_POLLING);
-  delayUntil(&next,T_SLEEP);
-}
-
-static void muestrear(fsm_t* f)
-{
-  lectura+=analogRead(ANALOG_IN);
-  N++;;
-  delayUntil(&next,T_MUESTREO);
 }
 
 //DEFINICIÓN DE OTRAS FUNCIONES
@@ -159,6 +123,9 @@ void begin(BLEService* servicio, BLECharacteristic* caracteristica, BLEDeviceEve
   digitalWrite(PIN_ENABLE_I2C_PULLUP, LOW); //PIN_ENABLE_I2C_PULLUP
 
   analogReadResolution(12); //Resolucion SAADC 12bits
+  digitalWrite(PWR_AMP,HIGH); //Desactivar MCP6023
+  digitalWrite(SW_MEDIDA,LOW); //Poner MOSFET en corte
+  nrf_saadc_disable(); //Desactivar SAADC hasta que se necesite
 
   // Inicializar el entorno BLE
   if (!BLE.begin()) {
@@ -184,29 +151,6 @@ void begin(BLEService* servicio, BLECharacteristic* caracteristica, BLEDeviceEve
 }
 
 /**
- * @brief Pone el MOSFET en corte y apaga el SAADC y el amplificador
- * para reducir consumo y recargar la bateria cuando no se necesite medir
- */
-void stopMedida(void)
-{
-  digitalWrite(PWR_AMP,HIGH); //Desactivar MCP6023
-  digitalWrite(SW_MEDIDA,LOW); //Poner MOSFET en corte
-  nrf_saadc_disable(); //Desactivar SAADC hasta que se necesite
-}
-
-/**
- * @brief Pone el MOSFET en saturación y enciende el SAADC y el amplificador
- * para comenzar a realizar medidas
- */
-void startMedida(void)
-{
-  digitalWrite(PWR_AMP,LOW); //Activar MCP6023
-  digitalWrite(SW_MEDIDA,HIGH); //MOSFET en saturación
-  nrf_saadc_enable(); //Activar SAADC
-  delayMicroseconds(200);
-}
-
-/**
  * @brief Espera hasta el tiempo necesario hasta que pase el tiempo fijado en tiempo_delay
  * desde la ultima activacion almacenada en ultima_activacion.
  * tiempo_delay debe estar en ms
@@ -229,20 +173,30 @@ void delayUntil(uint32_t* ultima_activacion, uint32_t tiempo_delay)
  * @param medida 
  * @param caracteristica 
  */
-void publicarMedida(float medida, BLEStringCharacteristic* caracteristica)
+void hacerMedida(BLEStringCharacteristic* caracteristica)
 {
   char buffer[16];
+  uint32_t lectura=0, next_muestreo=0;
+  float tension;
 
-  sprintf(buffer,"%.3f",medida);
+  digitalWrite(PWR_AMP,LOW); //Activar MCP6023
+  digitalWrite(SW_MEDIDA,HIGH); //MOSFET en saturación
+  nrf_saadc_enable(); //Activar SAADC
+  delayMicroseconds(200);
+
+  next_muestreo=millis();
+  for(int i=0;i<N_MUESTRAS;i++)
+  {
+    lectura+=analogRead(ANALOG_IN);
+    delayUntil(&next_muestreo,T_MUESTREO);
+  }
+
+  digitalWrite(PWR_AMP,HIGH); //Desactivar MCP6023
+  digitalWrite(SW_MEDIDA,LOW); //Poner MOSFET en corte
+  nrf_saadc_disable(); //Desactivar SAADC hasta que se necesite
+
+  tension=(lectura/N_MUESTRAS)*(VREF/4095);
+
+  sprintf(buffer,"%.3f",tension);
   caracteristica->writeValue(buffer);
-}
-
-/**
- * @brief Obtiene el tiempo transcurrido desde que empezó el programa en ms
- * 
- * @return uint32_t 
- */
-uint32_t now(void)
-{
-  return millis();
 }
