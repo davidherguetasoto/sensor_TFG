@@ -1,5 +1,6 @@
 #include<Arduino.h>
 #include <ArduinoBLE.h>
+#include <fsm.h>
 
 //DEFINES
 #define ANALOG_IN A3  //Pin analogico donde se realiza la lectura
