@@ -124,7 +124,8 @@ float medidaIrradiancia(void)
   */
   lectura_aux=lectura_aux/N_MUESTRAS;
   irrad_aux=lectura_aux*(VREF/4095);
-  return irrad_aux/10.1*1000;
+  //return irrad_aux/10.1*1000; //Para sacarlo en forma de Isc
+  return irrad_aux;
 }
 void blePeripheralConnectHandler(BLEDevice central)
 {
