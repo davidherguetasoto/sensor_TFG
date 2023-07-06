@@ -40,12 +40,6 @@ volatile uint8_t connected=0;
 uint32_t next=0;
 fsm_t* fsm_sensor = NULL;
 
-//OTRAS FUNCIONES PARA LA FSM
-void begin(BLEService* servicio, BLECharacteristic* caracteristica, BLEDeviceEventHandler handler_connection,
- BLEDeviceEventHandler handler_disconnection);
-void delayUntil(uint32_t* ultima_activacion, uint32_t tiempo_delay);
-void hacerMedida(BLEStringCharacteristic* caracteristica);
-
 //FUNCIONES DE GUARDA. SE EJECUTAN CUANDO SE HACE EFECTIVA UNA TRANSICIÓN
 static void medir(fsm_t* f);
 static void pollConnection(fsm_t* f);
@@ -54,7 +48,11 @@ static void pollConnection(fsm_t* f);
 static int conectado(fsm_t* f){if(connected)return 1; else return 0;}
 static int desconectado(fsm_t* f){if(!connected)return 1; else return 0;}
 
-
+//OTRAS FUNCIONES PARA LA FSM
+void begin(BLEService* servicio, BLECharacteristic* caracteristica, BLEDeviceEventHandler handler_connection,
+ BLEDeviceEventHandler handler_disconnection);
+void delayUntil(uint32_t* ultima_activacion, uint32_t tiempo_delay);
+void hacerMedida(BLEStringCharacteristic* caracteristica);
 
 //TABLA DE TRANSICIONES
 static fsm_trans_t sensor_tt[]={
