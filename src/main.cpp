@@ -166,8 +166,10 @@ void delayUntil(uint32_t* ultima_activacion, uint32_t tiempo_delay)
 }
 
 /**
- * @brief Escribe el valor de medida como string en la característica que se le haya pasado
- * 
+ * @brief Pone el sistema en modo medida (MOSFET saturación y MCP6023 ON) y comienza a tomar muestras.
+ * Cuando acaba, pone el MOSFET en corte y apaga el amplificador, realiza la media de las muestras,
+ * calcula la irradiancia obtenida y lo pasa a un buffer para escribirlo
+ * en la característica BLE que se le haya indicado como argumento.
  * @param medida 
  * @param caracteristica 
  */
