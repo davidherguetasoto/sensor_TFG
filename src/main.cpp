@@ -149,10 +149,9 @@ void begin(BLEService* servicio, BLECharacteristic* caracteristica, BLEDeviceEve
 }
 
 /**
- * @brief Espera hasta el tiempo necesario hasta que pase el tiempo fijado en tiempo_delay
+ * @brief Espera el tiempo necesario hasta que pase el tiempo fijado en tiempo_delay
  * desde la ultima activacion almacenada en ultima_activacion.
  * tiempo_delay debe estar en ms
- *
  * @param ultima_activacion 
  * @param tiempo_delay 
  */
