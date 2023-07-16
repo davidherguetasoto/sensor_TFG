@@ -175,7 +175,7 @@ void delayUntil(uint32_t* ultima_activacion, uint32_t tiempo_delay)
 void hacerMedida(BLEStringCharacteristic* caracteristica)
 {
   char buffer[16];
-  uint32_t lectura=0, next_muestreo=0;
+  uint32_t lectura=0, next_muestreo=0,irradiancia;
   float tension;
 
   digitalWrite(PWR_AMP,LOW); //Activar MCP6023
@@ -195,7 +195,8 @@ void hacerMedida(BLEStringCharacteristic* caracteristica)
   nrf_saadc_disable(); //Desactivar SAADC hasta que se necesite
 
   tension=(lectura/N_MUESTRAS)*(VREF/4095);
+  irradiancia = (uint32_t)534.28*tension-58.867; //RESULTADO DE CALIBRACIÓN
 
-  sprintf(buffer,"%.3f",tension);
+  sprintf(buffer,"%d",irradiancia);
   caracteristica->writeValue(buffer);
 }
