@@ -26,7 +26,7 @@
 #define T_POLLING 1000 //Tiempo en ms del tiempo que se encuentra haciendo polling
 #define T_ADVERTISING 1600 //Tiempo en ms de intervalos entre advertising
 #define CONSTANTE_CALIBRACION 534.28 //Término dependiente de la ecuación de calibración del sensor
-#define TERMINO_INDEPENDIENTE_CALIBRACION -58.867 //Término independiente de la constante de calibración
+#define TERMINO_INDEPENDIENTE_CALIBRACION -58.867 //Término independiente de la ecuación de calibración
 
 //MANEJADORES INTERRUPCIÓN
 void blePeripheralConnectHandler(BLEDevice central);
