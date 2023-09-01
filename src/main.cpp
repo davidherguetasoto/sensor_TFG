@@ -34,7 +34,8 @@ void blePeripheralDisconnectHandler(BLEDevice central);
 
 //ESTADOS FSM
 enum states{
-  IDLE
+  DESCONECTADO,
+  CONECTADO
 };
 
 //VARIABLES GLOBALES
@@ -58,8 +59,10 @@ void hacerMedida(BLEStringCharacteristic* caracteristica);
 
 //TABLA DE TRANSICIONES
 static fsm_trans_t sensor_tt[]={
-  {IDLE,conectado,IDLE,medir},
-  {IDLE,desconectado,IDLE,pollConnection},
+  {DESCONECTADO,desconectado,DESCONECTADO,pollConnection},
+  {DESCONECTADO,conectado,CONECTADO,medir},
+  {CONECTADO,conectado,CONECTADO,medir},
+  {CONECTADO,desconectado,DESCONECTADO,pollConnection},
   {-1, NULL, -1, NULL},
 };
 
